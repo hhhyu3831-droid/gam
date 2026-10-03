@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>บล็อคขึ้นฟ้า 1000</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&display=swap');
+  
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  
+  body {
+    font-family: 'Kanit', sans-serif;
+    background: linear-gradient(180deg, #87CEEB 0%, #4FC3F7 40%, #29B6F6 70%, #0288D1 100%);
+    min-height: 100vh;
+    overflow: hidden;
+    color: #fff;
+    position: relative;
+  }
+  
+  /* ท้องฟ้าและเมฆ */
+  .sky {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+  
+  .cloud {
+    position: absolute;
+    background: rgba(255,255,255,0.85);
+    border-radius: 50px;
+    animation: floatCloud linear infinite;
+  }
+  
+  @keyframes floatCloud {
+    from { transform: translateX(-20vw); }
+    to { transform: translateX(120vw); }
+  }
+  
+  /* UI ด้านบน */
+  .top-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.15) 100%);
+    backdrop-filter: blur(8px);
+  }
+  
+  .score-box {
+    background: rgba(255,255,255,0.2);
+    border: 2px solid rgba(255,255,255,0.4);
+    border-radius: 16px;
+    padding: 6px 16px;
+    font-size: 1.4rem;
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    min-width: 110px;
+    text-align: center;
+  }
+  
+  .score-box span {
+    color: #FFEB3B;
+  }
+  
+  .btn-group {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .ui-btn {
+    background: rgba(255,255,255,0.25);
+    border: 2px solid rgba(255,255,255,0.5);
+    border-radius: 12px;
+    padding: 8px 14px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    backdrop-filter: blur(4px);
+  }
+  
+  .ui-btn:hover, .ui-btn:active {
+    background: rgba(255,255,255,0.4);
+    transform: scale(1.05);
+  }
+  
+  /* แถบแกล้ง + ช่วย */
+  .power-bar {
+    position: fixed;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 90;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 96vw;
+  }
+  
+  .power-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .section-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    letter-spacing: 1px;
+  }
+  
+  .section-label.prank { color: #FF8A80; }
+  .section-label.help { color: #80D8FF; }
+  
+  .power-btns {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .power-btn {
+    width: 72px;
+    height: 72px;
+    border-radius: 16px;
+    border: 3px solid rgba(255,255,255,0.6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.15;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  
+  .power-btn:active {
+    transform: scale(0.92);
+  }
+  
+  .power-btn.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+    filter: grayscale(0.7);
+  }
+  
+  .power-btn .key {
+    position: absolute;
+    top: 3px;
+    right: 5px;
+    background: rgba(0,0,0,0.45);
+    border-radius: 6px;
+    padding: 1px 5px;
+    font-size: 0.65rem;
+  }
+  
+  .power-btn .icon {
+    font-size: 1.6rem;
+    margin-bottom: 2px;
+  }
+  
+  .prank1 { background: linear-gradient(135deg, #FF5252, #D32F2F); }
+  .prank2 { background: linear-gradient(135deg, #FF6E40, #E64A19); }
+  .help3  { background: linear-gradient(135deg, #40C4FF, #0277BD); }
+  .help4  { background: linear-gradient(135deg, #69F0AE, #00C853); }
+  
+  /* พื้นที่เกม */
+  .game-area {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    overflow: hidden;
+  }
+  
+  .stack-container {
+    position: absolute;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    transition: transform 0.45s cubic-bezier(0.25, 0.8, 0.25, 1);
+    will-change: transform;
+  }
+  
+  .block {
+    width: 120px;
+    height: 28px;
+    margin: 0 auto;
+    border-radius: 6px;
+    position: relative;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.25), inset 0 2px 4px rgba(255,255,255,0.35);
+    animation: placeBlock 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+  
+  @keyframes placeBlock {
+    0% { transform: translateY(-40px) scale(0.7); opacity: 0; }
+    60% { transform: translateY(4px) scale(1.05); }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+  }
+  
+  .block.removing {
+    animation: smashBlock 0.4s ease-in forwards;
+  }
+  
+  @keyframes smashBlock {
+    0% { transform: scale(1); opacity: 1; }
+    40% { transform: scale(1.15) rotate(5deg); }
+    100% { transform: scale(0.3) rotate(25deg) translateY(30px); opacity: 0; }
+  }
+  
+  .block.falling {
+    animation: fallIn 0.5s cubic-bezier(0.34, 1.3, 0.64, 1) forwards;
+  }
+  
+  @keyframes fallIn {
+    0% { transform: translateY(-180px) rotate(-10deg); opacity: 0; }
+    70% { transform: translateY(8px) rotate(3deg); }
+    100% { transform: translateY(0) rotate(0); opacity: 1; }
+  }
+  
+  /* ตัวละคร */
+  .character {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 70px;
+    z-index: 20;
+    transition: transform 0.15s;
+  }
+  
+  .character.jump {
+    animation: charJump 0.3s ease;
+  }
+  
+  @keyframes charJump {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-18px); }
+  }
+  
+  .char-body {
+    width: 36px;
+    height: 28px;
+    background: #FF7043;
+    border-radius: 10px 10px 6px 6px;
+    margin: 0 auto;
+    position: relative;
+    box-shadow: 0 3px 0 #E64A19;
+  }
+  
+  .char-head {
+    width: 32px;
+    height: 32px;
+    background: #FFCC80;
+    border-radius: 50%;
+    margin: 0 auto -6px;
+    position: relative;
+    border: 2px solid #FFAB40;
+  }
+  
+  .char-head::before, .char-head::after {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: #333;
+    border-radius: 50%;
+    top: 12px;
+  }
+  
+  .char-head::before { left: 7px; }
+  .char-head::after { right: 7px; }
+  
+  .char-legs {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 2px;
+  }
+  
+  .char-leg {
+    width: 10px;
+    height: 16px;
+    background: #5D4037;
+    border-radius: 0 0 4px 4px;
+  }
+  
+  /* เอฟเฟกต์พิเศษ */
+  .fx-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    pointer-events: none;
+  }
+  
+  .hammer {
+    position: absolute;
+    font-size: 4rem;
+    transform-origin: bottom center;
+    animation: hammerSmash 0.6s ease-out forwards;
+  }
+  
+  @keyframes hammerSmash {
+    0% { transform: translateY(-100px) rotate(-40deg); opacity: 0; }
+    40% { transform: translateY(0) rotate(10deg); opacity: 1; }
+    60% { transform: translateY(10px) rotate(-5deg); }
+    100% { transform: translateY(80px) rotate(20deg); opacity: 0; }
+  }
+  
+  .ironman {
+    position: absolute;
+    font-size: 3.5rem;
+    animation: ironFly 1.2s ease-in-out forwards;
+  }
+  
+  @keyframes ironFly {
+    0% { transform: translate(-100px, 200px) scale(0.5); opacity: 0; }
+    20% { opacity: 1; }
+    50% { transform: translate(0, -40px) scale(1.1); }
+    80% { transform: translate(80px, -120px) scale(0.9); }
+    100% { transform: translate(200px, -300px) scale(0.4); opacity: 0; }
+  }
+  
+  .hand-push {
+    position: absolute;
+    font-size: 4rem;
+    animation: handPush 0.9s ease-out forwards;
+  }
+  
+  @keyframes handPush {
+    0% { transform: translateY(100px) scale(0.6); opacity: 0; }
+    40% { transform: translateY(-20px) scale(1.2); opacity: 1; }
+    100% { transform: translateY(-180px) scale(0.8); opacity: 0; }
+  }
+  
+  .particle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  
+  /* นับถอยหลังแบบลอย (ไม่บังหน้าจอ) */
+  .countdown-float {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 120;
+    font-size: 8rem;
+    font-weight: 700;
+    color: #FFEB3B;
+    text-shadow: 0 0 40px rgba(255,235,59,0.8), 0 6px 20px rgba(0,0,0,0.5);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    animation: countPulse 1s ease-in-out infinite;
+  }
+  
+  .countdown-float.show {
+    opacity: 1;
+  }
+  
+  @keyframes countPulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.08); }
+  }
+  
+  /* โมดัล */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,30,60,0.75);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s;
+  }
+  
+  .modal-overlay.show {
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  .modal {
+    background: linear-gradient(160deg, #0288D1, #01579B);
+    border-radius: 24px;
+    padding: 28px 24px;
+    max-width: 340px;
+    width: 90%;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+    border: 3px solid rgba(255,255,255,0.3);
+    transform: scale(0.85);
+    transition: transform 0.3s cubic-bezier(0.34, 1.4, 0.64, 1);
+  }
+  
+  .modal-overlay.show .modal {
+    transform: scale(1);
+  }
+  
+  .modal h2 {
+    text-align: center;
+    font-size: 1.6rem;
+    margin-bottom: 16px;
+    color: #FFEB3B;
+  }
+  
+  .modal p, .modal li {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 8px;
+  }
+  
+  .modal ul {
+    padding-left: 18px;
+    margin-bottom: 16px;
+  }
+  
+  .modal .close-btn {
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+    padding: 12px;
+    background: #FFEB3B;
+    color: #01579B;
+    border: none;
+    border-radius: 14px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  
+  .modal .close-btn:active {
+    transform: scale(0.97);
+  }
+  
+  /* ชนะเต็มจอ (หลังนับครบ) */
+  .win-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,40,80,0.85);
+    z-index: 300;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.5s;
+  }
+  
+  .win-overlay.show {
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  .win-title {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #FFEB3B;
+    text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    animation: winPulse 1s ease-in-out infinite alternate;
+  }
+  
+  @keyframes winPulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.08); }
+  }
+  
+  .hint {
+    position: fixed;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 80;
+    font-size: 0.85rem;
+    background: rgba(0,0,0,0.35);
+    padding: 6px 14px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  
+  .toast {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.7);
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 14px 28px;
+    border-radius: 16px;
+    font-size: 1.3rem;
+    font-weight: 600;
+    z-index: 150;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s;
+  }
+  
+  .toast.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+</style>
+</head>
+<body>
+  <div class="sky" id="sky"></div>
+  
+  <div class="top-bar">
+    <div class="score-box">บล็อค: <span id="score">0</span>/1000</div>
+    <div class="btn-group">
+      <button class="ui-btn" id="howtoBtn">📖 วิธีเล่น</button>
+      <button class="ui-btn" id="exitBtn">🚪 ออก</button>
+    </div>
+  </div>
+  
+  <div class="power-bar">
+    <div class="power-section">
+      <div class="section-label prank">แกล้ง</div>
+      <div class="power-btns">
+        <div class="power-btn prank1" data-key="1" id="btn1">
+          <span class="key">1</span>
+          <span class="icon">🌹</span>
+          <span>ลบ 5</span>
+        </div>
+        <div class="power-btn prank2" data-key="2" id="btn2">
+          <span class="key">2</span>
+          <span class="icon">🍩</span>
+          <span>ไอร่อน<br>30 บล็อค</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="power-section">
+      <div class="section-label help">ช่วย</div>
+      <div class="power-btns">
+        <div class="power-btn help3" data-key="3" id="btn3">
+          <span class="key">3</span>
+          <span class="icon">⏰</span>
+          <span>เพิ่ม 5</span>
+        </div>
+        <div class="power-btn help4" data-key="4" id="btn4">
+          <span class="key">4</span>
+          <span class="icon">🐻</span>
+          <span>ดัน +100</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="game-area" id="gameArea">
+    <div class="stack-container" id="stack"></div>
+    <div class="character" id="character">
+      <div class="char-head"></div>
+      <div class="char-body"></div>
+      <div class="char-legs">
+        <div class="char-leg"></div>
+        <div class="char-leg"></div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="fx-layer" id="fx"></div>
+  
+  <!-- นับถอยหลังแบบลอย แค่ตัวเลข -->
+  <div class="countdown-float" id="countdownFloat">10</div>
+  
+  <div class="hint">กด Space หรือคลิกหน้าจอ เพื่อวางบล็อค</div>
+  
+  <div class="toast" id="toast"></div>
+  
+  <!-- วิธีเล่น -->
+  <div class="modal-overlay" id="howtoModal">
+    <div class="modal">
+      <h2>📖 วิธีเล่น</h2>
+      <p>เป้าหมาย: สร้างหอคอยให้สูงถึง <strong>1000 บล็อค</strong>!</p>
+      <ul>
+        <li>คลิกหน้าจอ หรือกด <strong>Spacebar</strong> เพื่อวางบล็อคทีละก้อน</li>
+        <li>ต้องรอให้บล็อควางเสร็จก่อนวางอันใหม่</li>
+        <li><strong>แกล้ง (1-2)</strong> จะลบบล็อคออก ต้องสร้างใหม่</li>
+        <li><strong>ช่วย (3-4)</strong> จะเพิ่มบล็อคให้</li>
+        <li>ถึง 1000 จะนับถอยหลัง 10 วินาที (ยังแกล้งได้!)</li>
+      </ul>
+      <p style="text-align:center;color:#FFEB3B">สนุกกับการสร้างและแกล้งเพื่อนได้เลย!</p>
+      <button class="close-btn" id="closeHowto">เข้าใจแล้ว!</button>
+    </div>
+  </div>
+  
+  <!-- ชนะเต็มจอ (หลังนับครบ) -->
+  <div class="win-overlay" id="winOverlay">
+    <div class="win-title">🎉 ถึง 1000 แล้ว!</div>
+    <p style="font-size:1.4rem;margin:16px 0;">คุณสร้างหอคอยสำเร็จ!</p>
+    <button class="ui-btn" style="margin-top:24px;font-size:1.1rem;padding:12px 28px" id="restartBtn">เล่นใหม่</button>
+  </div>
+
+<script>
+  const stackEl = document.getElementById('stack');
+  const scoreEl = document.getElementById('score');
+  const charEl = document.getElementById('character');
+  const fxEl = document.getElementById('fx');
+  const toastEl = document.getElementById('toast');
+  const gameArea = document.getElementById('gameArea');
+  const countdownFloat = document.getElementById('countdownFloat');
+  const btn3 = document.getElementById('btn3');
+  const btn4 = document.getElementById('btn4');
+  
+  let blocks = 0;
+  let isPlacing = false;
+  let isBusy = false;
+  let gameWon = false;
+  let ironmanActive = false;
+  let isCountingDown = false;
+  let countdownTimer = null;
+  let countdownValue = 10;
+  
+  const COLORS = [
+    '#FF5252','#FF7043','#FFCA28','#66BB6A','#42A5F5',
+    '#AB47BC','#EC407A','#26C6DA','#FFA726','#8D6E63'
+  ];
+  
+  function createClouds() {
+    const sky = document.getElementById('sky');
+    for (let i = 0; i < 8; i++) {
+      const c = document.createElement('div');
+      c.className = 'cloud';
+      const size = 40 + Math.random() * 80;
+      c.style.width = size + 'px';
+      c.style.height = size * 0.5 + 'px';
+      c.style.top = (5 + Math.random() * 45) + '%';
+      c.style.left = Math.random() * 100 + '%';
+      c.style.opacity = 0.5 + Math.random() * 0.4;
+      c.style.animationDuration = (40 + Math.random() * 50) + 's';
+      c.style.animationDelay = (-Math.random() * 40) + 's';
+      sky.appendChild(c);
+    }
+  }
+  createClouds();
+  
+  function updateCamera() {
+    const visibleBlocks = stackEl.querySelectorAll('.block:not(.removing)').length;
+    const offset = Math.max(0, visibleBlocks * 28 - window.innerHeight * 0.38);
+    stackEl.style.transform = `translateX(-50%) translateY(${offset}px)`;
+  }
+  
+  function updateScore() {
+    scoreEl.textContent = blocks;
+    updateCamera();
+    
+    // อัปเดตสถานะปุ่มช่วยตอนนับถอยหลัง
+    if (isCountingDown) {
+      btn3.classList.add('disabled');
+      btn4.classList.add('disabled');
+    } else {
+      btn3.classList.remove('disabled');
+      btn4.classList.remove('disabled');
+    }
+  }
+  
+  function showToast(msg, duration = 1200) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    setTimeout(() => toastEl.classList.remove('show'), duration);
+  }
+  
+  function getBlockColor(n) {
+    return COLORS[n % COLORS.length];
+  }
+  
+  function addBlock(animate = true, type = 'place') {
+    if (blocks >= 1000) return;
+    
+    const b = document.createElement('div');
+    b.className = 'block' + (type === 'fall' ? ' falling' : '');
+    b.style.background = getBlockColor(blocks);
+    stackEl.prepend(b);
+    blocks++;
+    updateScore();
+    
+    charEl.classList.remove('jump');
+    void charEl.offsetWidth;
+    charEl.classList.add('jump');
+    
+    if (blocks >= 1000 && !isCountingDown && !gameWon) {
+      startCountdown();
+    }
+  }
+  
+  function removeBlocks(count, withAnim = true) {
+    const toRemove = Math.min(count, blocks);
+    if (toRemove <= 0) return;
+    
+    const children = Array.from(stackEl.children).slice(0, toRemove);
+    
+    if (withAnim) {
+      children.forEach(el => el.classList.add('removing'));
+      
+      setTimeout(() => {
+        children.forEach(el => {
+          if (el.parentNode) el.remove();
+        });
+        blocks -= toRemove;
+        updateScore();
+        
+        // ถ้ากำลังนับถอยหลังแล้วโดนแกล้งจนต่ำกว่า 1000 → ยกเลิกนับ
+        if (isCountingDown && blocks < 1000) {
+          cancelCountdown();
+          showToast('ถูกแกล้ง! ต้องสร้างใหม่ 😈');
+        }
+      }, 400);
+    } else {
+      children.forEach(el => el.remove());
+      blocks -= toRemove;
+      updateScore();
+      
+      if (isCountingDown && blocks < 1000) {
+        cancelCountdown();
+        showToast('ถูกแกล้ง! ต้องสร้างใหม่ 😈');
+      }
+    }
+  }
+  
+  // ==================== นับถอยหลัง ====================
+  function startCountdown() {
+    if (isCountingDown || gameWon) return;
+    
+    isCountingDown = true;
+    countdownValue = 10;
+    countdownFloat.textContent = countdownValue;
+    countdownFloat.classList.add('show');
+    updateScore(); // ปิดปุ่มช่วย
+    
+    showToast('ถึง 1000 แล้ว! นับถอยหลัง... (ยังแกล้งได้นะ!)', 2000);
+    
+    countdownTimer = setInterval(() => {
+      countdownValue--;
+      countdownFloat.textContent = countdownValue;
+      
+      if (countdownValue <= 0) {
+        clearInterval(countdownTimer);
+        countdownFloat.classList.remove('show');
+        isCountingDown = false;
+        finishWin();
+      }
+    }, 1000);
+  }
+  
+  function cancelCountdown() {
+    if (!isCountingDown) return;
+    clearInterval(countdownTimer);
+    isCountingDown = false;
+    countdownFloat.classList.remove('show');
+    updateScore(); // เปิดปุ่มช่วยกลับ
+  }
+  
+  function finishWin() {
+    gameWon = true;
+    document.getElementById('winOverlay').classList.add('show');
+  }
+  
+  // ==================== วางบล็อค ====================
+  function tryPlaceBlock() {
+    // ตอนนับถอยหลังหรือชนะแล้ว วางไม่ได้
+    if (isPlacing || isBusy || gameWon || isCountingDown || ironmanActive) return;
+    
+    isPlacing = true;
+    addBlock(true, 'place');
+    
+    setTimeout(() => {
+      isPlacing = false;
+    }, 300);
+  }
+  
+  // ==================== พลังพิเศษ ====================
+  function usePower(key) {
+    if (gameWon) return;          // ชนะเต็มที่แล้ว ห้ามทุกอย่าง
+    if (isBusy) return;
+    
+    // ตอนนับถอยหลัง → ห้ามใช้ปุ่มช่วย (3,4) แต่แ
+  if (isCountingDown && (key === '3' || key === '4')) {
+      showToast('ตอนนับถอยหลังใช้ช่วยไม่ได้!');
+      return;
+    }
+    
+    if (key === '1') {
+      if (blocks === 0) {
+        showToast('ยังไม่มีบล็อคให้ลบ!');
+        return;
+      }
+      isBusy = true;
+      showToast('🌹 ค้อนทุบ! -5');
+      
+      const hammer = document.createElement('div');
+      hammer.className = 'hammer';
+      hammer.textContent = '🔨';
+      const rect = stackEl.getBoundingClientRect();
+      hammer.style.left = (rect.left + rect.width / 2 - 30) + 'px';
+      hammer.style.top = (rect.top - 20) + 'px';
+      fxEl.appendChild(hammer);
+      
+      setTimeout(() => {
+        removeBlocks(5, true);
+        createParticles(rect.left + 60, rect.top + 20, '#FF5252');
+        setTimeout(() => {
+          hammer.remove();
+          isBusy = false;
+        }, 450);
+      }, 350);
+      
+    } else if (key === '2') {
+      if (blocks === 0) {
+        showToast('ยังไม่มีบล็อคให้ลบ!');
+        return;
+      }
+      isBusy = true;
+      ironmanActive = true;
+      showToast('🍩 ไอร่อนแมนโจมตี! -30');
+      
+      const im = document.createElement('div');
+      im.className = 'ironman';
+      im.textContent = '🤖';
+      const rect = stackEl.getBoundingClientRect();
+      im.style.left = (rect.left + 20) + 'px';
+      im.style.top = (rect.top + 50) + 'px';
+      fxEl.appendChild(im);
+      
+      setTimeout(() => im.remove(), 1200);
+      
+      let removed = 0;
+      const maxRemove = Math.min(30, blocks);
+      const interval = 10000 / Math.max(maxRemove, 1);
+      
+      const timer = setInterval(() => {
+        if (removed >= maxRemove || blocks <= 0) {
+          clearInterval(timer);
+          ironmanActive = false;
+          isBusy = false;
+          showToast('ไอร่อนแมนบินจากไป!');
+          return;
+        }
+        removeBlocks(1, true);
+        removed++;
+        
+        const topRect = stackEl.getBoundingClientRect();
+        createParticles(topRect.left + 60, topRect.top + 10, '#FF6E40');
+      }, interval);
+      
+    } else if (key === '3') {
+      isBusy = true;
+      showToast('⏰ บล็อคหล่นมา! +5');
+      
+      let added = 0;
+      const fallInterval = setInterval(() => {
+        if (added >= 5 || blocks >= 1000) {
+          clearInterval(fallInterval);
+          isBusy = false;
+          return;
+        }
+        addBlock(true, 'fall');
+        added++;
+      }, 180);
+      
+    } else if (key === '4') {
+      isBusy = true;
+      showToast('🐻 มือหมีดันขึ้น! +100');
+      
+      const hand = document.createElement('div');
+      hand.className = 'hand-push';
+      hand.textContent = '🖐️';
+      const rect = stackEl.getBoundingClientRect();
+      hand.style.left = (rect.left + 20) + 'px';
+      hand.style.top = (rect.top + 40) + 'px';
+      fxEl.appendChild(hand);
+      
+      setTimeout(() => {
+        let added = 0;
+        const pushInterval = setInterval(() => {
+          if (added >= 100 || blocks >= 1000) {
+            clearInterval(pushInterval);
+            hand.remove();
+            isBusy = false;
+            return;
+          }
+          addBlock(false);
+          added++;
+        }, 12);
+      }, 300);
+    }
+  }
+  
+  function createParticles(x, y, color) {
+    for (let i = 0; i < 12; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.style.background = color;
+      p.style.left = x + 'px';
+      p.style.top = y + 'px';
+      fxEl.appendChild(p);
+      
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 40 + Math.random() * 60;
+      const tx = Math.cos(angle) * dist;
+      const ty = Math.sin(angle) * dist;
+      
+      p.animate([
+        { transform: 'translate(0,0) scale(1)', opacity: 1 },
+        { transform: `translate(${tx}px, ${ty}px) scale(0)`, opacity: 0 }
+      ], {
+        duration: 500 + Math.random() * 300,
+        easing: 'ease-out'
+      }).onfinish = () => p.remove();
+    }
+  }
+  
+  function restartGame() {
+    blocks = 0;
+    isPlacing = false;
+    isBusy = false;
+    gameWon = false;
+    ironmanActive = false;
+    cancelCountdown();
+    stackEl.innerHTML = '';
+    updateScore();
+    document.getElementById('winOverlay').classList.remove('show');
+    showToast('เริ่มใหม่!');
+  }
+  
+  // ==================== Event ====================
+  gameArea.addEventListener('click', (e) => {
+    if (e.target.closest('.power-btn') || e.target.closest('.ui-btn')) return;
+    tryPlaceBlock();
+  });
+  
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+      e.preventDefault();
+      tryPlaceBlock();
+    } else if (['1','2','3','4'].includes(e.key)) {
+      usePower(e.key);
+    }
+  });
+  
+  document.querySelectorAll('.power-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      usePower(btn.dataset.key);
+    });
+  });
+  
+  document.getElementById('howtoBtn').addEventListener('click', () => {
+    document.getElementById('howtoModal').classList.add('show');
+  });
+  document.getElementById('closeHowto').addEventListener('click', () => {
+    document.getElementById('howtoModal').classList.remove('show');
+  });
+  
+  document.getElementById('exitBtn').addEventListener('click', () => {
+    if (confirm('ต้องการออกจากเกมจริงหรือไม่?')) {
+      window.close();
+      document.body.innerHTML = '<div style="display:flex;height:100vh;align-items:center;justify-content:center;font-size:1.5rem;background:#0288D1;color:white;">ลาก่อน! ขอบคุณที่เล่น 👋</div>';
+    }
+  });
+  
+  document.getElementById('restartBtn').addEventListener('click', restartGame);
+  
+  updateScore();
+  window.addEventListener('resize', updateCamera);
+  showToast('เริ่มสร้างหอคอยได้เลย!', 2000);
+</script>
+</body>
+</html>
